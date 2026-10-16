@@ -1,0 +1,38 @@
+@baseUrl = http://localhost:5195
+
+### Obtener usuarios
+GET {{baseUrl}}/api/users
+Accept: application/json
+
+### Obtener usuario por Id
+GET {{baseUrl}}/api/users/1
+Accept: application/json
+
+### Obtener usuario por Auth0 User Id
+GET {{baseUrl}}/api/users/by-auth0/auth0%7Cdemo-user-001
+Accept: application/json
+
+### Crear usuario
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "auth0UserId": "auth0|demo-user-004",
+  "name": "Luis Hernandez",
+  "email": "luis.hernandez@example.com",
+  "isActive": true
+}
+
+### Actualizar usuario
+PUT {{baseUrl}}/api/users/1
+Content-Type: application/json
+
+{
+  "auth0UserId": "auth0|demo-user-001",
+  "name": "Ana Lopez Actualizada",
+  "email": "ana.lopez@example.com",
+  "isActive": true
+}
+
+### Eliminar usuario
+DELETE {{baseUrl}}/api/users/3
