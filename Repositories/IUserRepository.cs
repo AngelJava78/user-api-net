@@ -9,6 +9,7 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByAuth0UserIdAsync(string auth0UserId);
     Task<int> CreateAsync(CreateUserDto dto);
+    Task<int> CreateAsync(CreateUserDto dto, string? auth0UserId);
     Task<bool> UpdateAsync(int id, UpdateUserDto dto);
     Task<bool> DeleteAsync(int id);
 }

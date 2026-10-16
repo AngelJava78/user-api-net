@@ -5,10 +5,6 @@ namespace UsersApiDemo.DTOs;
 public class CreateUserDto
 {
     [Required]
-    [StringLength(200)]
-    public string Auth0UserId { get; set; } = string.Empty;
-
-    [Required]
     [StringLength(150)]
     public string Name { get; set; } = string.Empty;
 
@@ -16,6 +12,9 @@ public class CreateUserDto
     [EmailAddress]
     [StringLength(320)]
     public string Email { get; set; } = string.Empty;
+
+    // Only used to create the identity in Auth0. It is never stored in SQL Server.
+    public string? Password { get; set; }
 
     public bool IsActive { get; set; } = true;
 }

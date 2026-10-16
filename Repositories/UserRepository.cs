@@ -53,7 +53,12 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(sql, new { Auth0UserId = auth0UserId });
     }
 
-    public async Task<int> CreateAsync(CreateUserDto dto)
+    public Task<int> CreateAsync(CreateUserDto dto)
+    {
+        return CreateAsync(dto, null);
+    }
+
+    public async Task<int> CreateAsync(CreateUserDto dto, string? auth0UserId)
     {
         const string sql = """
             INSERT INTO dbo.Users (Auth0UserId, Name, Email, IsActive)
@@ -62,15 +67,20 @@ public class UserRepository : IUserRepository
             """;
 
         await using var connection = CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(sql, dto);
+        return await connection.ExecuteScalarAsync<int>(sql, new
+        {
+            Auth0UserId = auth0UserId,
+            dto.Name,
+            dto.Email,
+            dto.IsActive
+        });
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)
     {
         const string sql = """
             UPDATE dbo.Users
-            SET Auth0UserId = @Auth0UserId,
-                Name = @Name,
+            SET Name = @Name,
                 Email = @Email,
                 IsActive = @IsActive
             WHERE Id = @Id;
@@ -80,7 +90,6 @@ public class UserRepository : IUserRepository
         var affectedRows = await connection.ExecuteAsync(sql, new
         {
             Id = id,
-            dto.Auth0UserId,
             dto.Name,
             dto.Email,
             dto.IsActive

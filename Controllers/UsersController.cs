@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UsersApiDemo.DTOs;
 using UsersApiDemo.Repositories;
+using UsersApiDemo.Services;
 
 namespace UsersApiDemo.Controllers;
 
@@ -9,10 +10,14 @@ namespace UsersApiDemo.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserRepository _repository;
+    private readonly IAuth0ManagementService _auth0ManagementService;
 
-    public UsersController(IUserRepository repository)
+    public UsersController(
+        IUserRepository repository,
+        IAuth0ManagementService auth0ManagementService)
     {
         _repository = repository;
+        _auth0ManagementService = auth0ManagementService;
     }
 
     [HttpGet]
@@ -39,8 +44,17 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
-        var id = await _repository.CreateAsync(dto);
+        if (_auth0ManagementService.IsEnabled && string.IsNullOrWhiteSpace(dto.Password))
+        {
+            ModelState.AddModelError(nameof(dto.Password),
+                "Password is required when Auth0 Management integration is enabled.");
+            return ValidationProblem(ModelState);
+        }
+
+        var auth0UserId = await _auth0ManagementService.CreateUserAsync(dto);
+        var id = await _repository.CreateAsync(dto, auth0UserId);
         var user = await _repository.GetByIdAsync(id);
+
         return CreatedAtAction(nameof(GetById), new { id }, user);
     }
 
