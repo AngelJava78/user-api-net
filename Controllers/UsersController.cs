@@ -10,14 +10,14 @@ namespace UsersApiDemo.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserRepository _repository;
-    private readonly IAuth0ManagementService _auth0ManagementService;
+    private readonly IUserService _userService;
 
     public UsersController(
         IUserRepository repository,
-        IAuth0ManagementService auth0ManagementService)
+        IUserService userService)
     {
         _repository = repository;
-        _auth0ManagementService = auth0ManagementService;
+        _userService = userService;
     }
 
     [HttpGet]
@@ -44,18 +44,20 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
-        if (_auth0ManagementService.IsEnabled && string.IsNullOrWhiteSpace(dto.Password))
+        try
         {
-            ModelState.AddModelError(nameof(dto.Password),
-                "Password is required when Auth0 Management integration is enabled.");
+            var user = await _userService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+        }
+        catch (UserAlreadyExistsException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(nameof(dto.Password), ex.Message);
             return ValidationProblem(ModelState);
         }
-
-        var auth0UserId = await _auth0ManagementService.CreateUserAsync(dto);
-        var id = await _repository.CreateAsync(dto, auth0UserId);
-        var user = await _repository.GetByIdAsync(id);
-
-        return CreatedAtAction(nameof(GetById), new { id }, user);
     }
 
     [HttpPut("{id:int}")]

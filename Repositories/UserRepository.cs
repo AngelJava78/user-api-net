@@ -41,6 +41,18 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(sql, new { Id = id });
     }
 
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        const string sql = """
+            SELECT Id, Auth0UserId, Name, Email, IsActive, CreatedAt
+            FROM dbo.Users
+            WHERE Email = @Email;
+            """;
+
+        await using var connection = CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<User>(sql, new { Email = email });
+    }
+
     public async Task<User?> GetByAuth0UserIdAsync(string auth0UserId)
     {
         const string sql = """
@@ -53,27 +65,39 @@ public class UserRepository : IUserRepository
         return await connection.QuerySingleOrDefaultAsync<User>(sql, new { Auth0UserId = auth0UserId });
     }
 
-    public Task<int> CreateAsync(CreateUserDto dto)
-    {
-        return CreateAsync(dto, null);
-    }
-
-    public async Task<int> CreateAsync(CreateUserDto dto, string? auth0UserId)
+    public async Task<int> CreateAsync(CreateUserDto dto)
     {
         const string sql = """
             INSERT INTO dbo.Users (Auth0UserId, Name, Email, IsActive)
             OUTPUT INSERTED.Id
-            VALUES (@Auth0UserId, @Name, @Email, @IsActive);
+            VALUES (NULL, @Name, @Email, @IsActive);
             """;
 
         await using var connection = CreateConnection();
         return await connection.ExecuteScalarAsync<int>(sql, new
         {
-            Auth0UserId = auth0UserId,
             dto.Name,
             dto.Email,
             dto.IsActive
         });
+    }
+
+    public async Task<bool> UpdateAuth0UserIdAsync(int id, string auth0UserId)
+    {
+        const string sql = """
+            UPDATE dbo.Users
+            SET Auth0UserId = @Auth0UserId
+            WHERE Id = @Id;
+            """;
+
+        await using var connection = CreateConnection();
+        var affectedRows = await connection.ExecuteAsync(sql, new
+        {
+            Id = id,
+            Auth0UserId = auth0UserId
+        });
+
+        return affectedRows > 0;
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateUserDto dto)

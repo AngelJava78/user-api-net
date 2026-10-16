@@ -1,71 +1,42 @@
-# UsersApiDemo
+# UsersApiDemo v5
 
-API REST didactica en .NET 10, C#, Dapper y SQL Server.
+API REST didactica en .NET 10, C#, Dapper y SQL Server con integracion a Auth0 Management API.
 
-## Objetivo
+## Flujo de alta de usuario
 
-Administrar usuarios propios de la aplicacion sin implementar autenticacion ni almacenar contrasenas.
-Auth0 se encargara posteriormente de la autenticacion.
+`POST /api/users` aplica obligatoriamente esta regla de negocio:
 
-## Separacion de responsabilidades
+1. Buscar el usuario por email en SQL Server. Si existe, responder `409 Conflict`.
+2. Buscar el usuario por email en Auth0. Si existe, responder `409 Conflict`.
+3. Crear el usuario en SQL Server con `Auth0UserId = NULL`.
+4. Crear el usuario en Auth0.
+5. Guardar en SQL Server el `user_id` generado por Auth0.
 
-SQL Server almacena los datos propios de la aplicacion:
+No existe un flujo alternativo de alta solo en SQL Server. Por eso `Auth0Management:Enabled` debe estar en `true`.
 
-- Id
-- Auth0UserId (opcional hasta que exista una vinculacion con Auth0)
-- Name
-- Email
-- IsActive
-- CreatedAt
+## Configuracion Auth0
 
-Auth0 sera responsable de identidad y autenticacion. La contrasena nunca se almacena en esta API.
-
-## Cambio de esta version
-
-`Auth0UserId` ya no forma parte de `CreateUserDto` ni de `UpdateUserDto`.
-Un usuario puede existir en SQL Server sin estar vinculado todavia a Auth0.
-
-Cuando posteriormente vinculemos ambas identidades, el valor de `Auth0UserId` correspondera normalmente al claim `sub` entregado por Auth0.
-
-## Base de datos existente
-
-Si ya ejecutaste la primera version del proyecto, ejecuta:
-
-`Sql/02-make-auth0-user-id-optional.sql`
-
-Esto hace nullable `Auth0UserId` y sustituye la restriccion UNIQUE anterior por un indice UNIQUE filtrado, permitiendo multiples registros con `NULL` pero evitando repetir un Auth0 User ID real.
-
-Para una instalacion nueva usa:
-
-`Sql/01-create-database.sql`
-
-## Endpoints existentes
-
-- GET /api/users
-- GET /api/users/{id}
-- GET /api/users/by-auth0/{auth0UserId}
-- POST /api/users
-- PUT /api/users/{id}
-- DELETE /api/users/{id}
-
-Las rutas existentes se conservan.
-
-## Auth0 Management API integration (prepared, disabled by default)
-
-This version adds the code required for `POST /api/users` to create the identity in Auth0 first and then store the returned `user_id` in `dbo.Users.Auth0UserId`.
-
-The integration is disabled by default:
+Completa en `appsettings.json` o mediante User Secrets:
 
 ```json
 "Auth0Management": {
-  "Enabled": false,
-  "Domain": "",
-  "ClientId": "",
-  "ClientSecret": "",
+  "Enabled": true,
+  "Domain": "TU_DOMINIO.auth0.com",
+  "ClientId": "CLIENT_ID_M2M",
+  "ClientSecret": "CLIENT_SECRET_M2M",
   "Connection": "Username-Password-Authentication"
 }
 ```
 
-With `Enabled=false`, the API keeps the previous behavior and creates the SQL Server user without calling Auth0.
+La aplicacion M2M debe tener al menos `read:users` y `create:users` sobre Auth0 Management API.
 
-When Auth0 is configured later and `Enabled=true`, the request will include `password`. The password is sent only to Auth0 and is never stored in SQL Server.
+## Endpoints conservados
+
+- `GET /api/users`
+- `GET /api/users/{id}`
+- `GET /api/users/by-auth0/{auth0UserId}`
+- `POST /api/users`
+- `PUT /api/users/{id}`
+- `DELETE /api/users/{id}`
+
+La contrasena recibida en el alta se utiliza unicamente para crear la identidad en Auth0. No se almacena en SQL Server.

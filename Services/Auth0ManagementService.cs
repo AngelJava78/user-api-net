@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using UsersApiDemo.DTOs;
 using UsersApiDemo.Options;
@@ -20,6 +21,40 @@ public class Auth0ManagementService : IAuth0ManagementService
     }
 
     public bool IsEnabled => _options.Enabled;
+
+    public async Task<Auth0CreateUserResponse?> GetUserByEmailAsync(string email)
+    {
+        if (!IsEnabled)
+        {
+            return null;
+        }
+
+        ValidateConfiguration();
+
+        var accessToken = await GetManagementAccessTokenAsync();
+        var url = $"api/v2/users-by-email?email={Uri.EscapeDataString(email)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"Auth0 could not search the user. Status: {(int)response.StatusCode}. Response: {responseBody}");
+        }
+
+        var users = JsonSerializer.Deserialize<List<Auth0CreateUserResponse>>(
+            responseBody,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+        return users?.FirstOrDefault();
+    }
 
     public async Task<string?> CreateUserAsync(CreateUserDto dto)
     {

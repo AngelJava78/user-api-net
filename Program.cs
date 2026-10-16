@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.Configure<Auth0ManagementOptions>(
     builder.Configuration.GetSection(Auth0ManagementOptions.SectionName));
