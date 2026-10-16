@@ -1,18 +1,45 @@
 # UsersApiDemo
 
-API REST didactica para CRUD de usuarios propios de la aplicacion usando .NET 10, C#, Dapper y SQL Server.
+API REST didactica en .NET 10, C#, Dapper y SQL Server.
 
-## Importante
+## Objetivo
 
-Esta API NO implementa autenticacion y NO almacena contrasenas.
+Administrar usuarios propios de la aplicacion sin implementar autenticacion ni almacenar contrasenas.
+Auth0 se encargara posteriormente de la autenticacion.
 
-`Auth0UserId` sirve para relacionar un registro de negocio de SQL Server con la identidad autenticada por Auth0. La autenticacion seguira perteneciendo a Auth0.
+## Separacion de responsabilidades
 
-## Flujo
+SQL Server almacena los datos propios de la aplicacion:
 
-Cliente HTTP -> UsersController -> IUserRepository -> UserRepository -> Dapper -> SQL Server
+- Id
+- Auth0UserId (opcional hasta que exista una vinculacion con Auth0)
+- Name
+- Email
+- IsActive
+- CreatedAt
 
-## Endpoints
+Auth0 sera responsable de identidad y autenticacion. La contrasena nunca se almacena en esta API.
+
+## Cambio de esta version
+
+`Auth0UserId` ya no forma parte de `CreateUserDto` ni de `UpdateUserDto`.
+Un usuario puede existir en SQL Server sin estar vinculado todavia a Auth0.
+
+Cuando posteriormente vinculemos ambas identidades, el valor de `Auth0UserId` correspondera normalmente al claim `sub` entregado por Auth0.
+
+## Base de datos existente
+
+Si ya ejecutaste la primera version del proyecto, ejecuta:
+
+`Sql/02-make-auth0-user-id-optional.sql`
+
+Esto hace nullable `Auth0UserId` y sustituye la restriccion UNIQUE anterior por un indice UNIQUE filtrado, permitiendo multiples registros con `NULL` pero evitando repetir un Auth0 User ID real.
+
+Para una instalacion nueva usa:
+
+`Sql/01-create-database.sql`
+
+## Endpoints existentes
 
 - GET /api/users
 - GET /api/users/{id}
@@ -21,26 +48,24 @@ Cliente HTTP -> UsersController -> IUserRepository -> UserRepository -> Dapper -
 - PUT /api/users/{id}
 - DELETE /api/users/{id}
 
-## Base de datos
+Las rutas existentes se conservan.
 
-Ejecuta `Sql/01-create-database.sql` en SQL Server.
+## Auth0 Management API integration (prepared, disabled by default)
 
-Por defecto la cadena es:
+This version adds the code required for `POST /api/users` to create the identity in Auth0 first and then store the returned `user_id` in `dbo.Users.Auth0UserId`.
 
-`Server=localhost;Database=UsersDemo;Trusted_Connection=True;TrustServerCertificate=True;`
+The integration is disabled by default:
 
-Ajustala en `appsettings.json` si tu instancia es diferente.
-
-## Ejecutar
-
-```bash
-dotnet restore
-dotnet run
+```json
+"Auth0Management": {
+  "Enabled": false,
+  "Domain": "",
+  "ClientId": "",
+  "ClientSecret": "",
+  "Connection": "Username-Password-Authentication"
+}
 ```
 
-El perfil HTTP usa `http://localhost:5195`.
+With `Enabled=false`, the API keeps the previous behavior and creates the SQL Server user without calling Auth0.
 
-## Paquetes
-
-- Dapper 2.1.89
-- Microsoft.Data.SqlClient 7.1.1
+When Auth0 is configured later and `Enabled=true`, the request will include `password`. The password is sent only to Auth0 and is never stored in SQL Server.
