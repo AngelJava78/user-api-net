@@ -40,3 +40,25 @@ La aplicacion M2M debe tener al menos `read:users` y `create:users` sobre Auth0 
 - `DELETE /api/users/{id}`
 
 La contrasena recibida en el alta se utiliza unicamente para crear la identidad en Auth0. No se almacena en SQL Server.
+
+
+## Autenticación de la API con Auth0
+
+Todos los endpoints de `UsersController` están protegidos con `[Authorize]`. La API valida Access Tokens JWT emitidos por Auth0 para el audience `https://demo-api`.
+
+Configuración utilizada:
+
+```json
+"Auth0": {
+  "Domain": "dev-angel-java.us.auth0.com",
+  "Audience": "https://demo-api"
+}
+```
+
+Comportamiento esperado:
+
+- Sin `Authorization: Bearer <token>`: `401 Unauthorized`.
+- Token inválido: `401 Unauthorized`.
+- Token válido emitido por Auth0 para `https://demo-api`: acceso al CRUD.
+
+La sección `Auth0Management` sigue siendo independiente: se utiliza únicamente para administrar usuarios en Auth0 mediante la Management API.

@@ -41,3 +41,7 @@ Content-Type: application/json
 
 ### Delete user
 DELETE {{UsersApiDemo_HostAddress}}/api/users/1
+
+### Check current user's permission
+GET http://localhost:5195/api/authorization/check?permission=read:books
+Authorization: Bearer {{accessToken}}
