@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using UsersApiDemo.Authorization;
 using UsersApiDemo.Options;
 using UsersApiDemo.Repositories;
 using UsersApiDemo.Services;
@@ -24,7 +26,22 @@ builder.Services
         options.Audience = auth0Audience;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PermissionNames.ReadUsers, policy =>
+        policy.Requirements.Add(new PermissionRequirement(PermissionNames.ReadUsers)));
+
+    options.AddPolicy(PermissionNames.CreateUsers, policy =>
+        policy.Requirements.Add(new PermissionRequirement(PermissionNames.CreateUsers)));
+
+    options.AddPolicy(PermissionNames.UpdateUsers, policy =>
+        policy.Requirements.Add(new PermissionRequirement(PermissionNames.UpdateUsers)));
+
+    options.AddPolicy(PermissionNames.DeleteUsers, policy =>
+        policy.Requirements.Add(new PermissionRequirement(PermissionNames.DeleteUsers)));
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 builder.Services.Configure<Auth0ManagementOptions>(
     builder.Configuration.GetSection(Auth0ManagementOptions.SectionName));

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UsersApiDemo.Authorization;
 using UsersApiDemo.DTOs;
 using UsersApiDemo.Repositories;
 using UsersApiDemo.Services;
@@ -23,6 +24,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = PermissionNames.ReadUsers)]
     public async Task<IActionResult> GetAll()
     {
         var users = await _repository.GetAllAsync();
@@ -30,6 +32,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = PermissionNames.ReadUsers)]
     public async Task<IActionResult> GetById(int id)
     {
         var user = await _repository.GetByIdAsync(id);
@@ -37,6 +40,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("by-auth0/{auth0UserId}")]
+    [Authorize(Policy = PermissionNames.ReadUsers)]
     public async Task<IActionResult> GetByAuth0UserId(string auth0UserId)
     {
         var user = await _repository.GetByAuth0UserIdAsync(auth0UserId);
@@ -44,6 +48,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = PermissionNames.CreateUsers)]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
         try
@@ -63,6 +68,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = PermissionNames.UpdateUsers)]
     public async Task<IActionResult> Update(int id, UpdateUserDto dto)
     {
         var updated = await _repository.UpdateAsync(id, dto);
@@ -70,6 +76,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = PermissionNames.DeleteUsers)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _repository.DeleteAsync(id);

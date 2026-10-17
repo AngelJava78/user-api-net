@@ -29,7 +29,8 @@ public class AuthorizationController : ControllerBase
             });
         }
 
-        var auth0UserId = User.FindFirstValue("sub");
+        var auth0UserId = User.FindFirstValue("sub")
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(auth0UserId))
         {

@@ -62,3 +62,22 @@ Comportamiento esperado:
 - Token válido emitido por Auth0 para `https://demo-api`: acceso al CRUD.
 
 La sección `Auth0Management` sigue siendo independiente: se utiliza únicamente para administrar usuarios en Auth0 mediante la Management API.
+
+## Autorizacion por permisos
+
+`UsersController` valida permisos almacenados en `UsersDemo` mediante policies de ASP.NET Core:
+
+- `GET /api/users` -> `read:users`
+- `GET /api/users/{id}` -> `read:users`
+- `GET /api/users/by-auth0/{auth0UserId}` -> `read:users`
+- `POST /api/users` -> `create:users`
+- `PUT /api/users/{id}` -> `update:users`
+- `DELETE /api/users/{id}` -> `delete:users`
+
+La autenticacion sigue siendo responsabilidad de Auth0. El handler obtiene el claim `sub` del Access Token y consulta `Users -> UserRoles -> RolePermissions -> Permissions` en SQL Server.
+
+Resultados esperados:
+
+- sin token o token invalido: `401 Unauthorized`
+- token valido sin permiso: `403 Forbidden`
+- token valido con permiso: la operacion continua normalmente
